@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "1025371156608",
+    "firebase_url": "https://falldetector2.firebaseio.com",
+    "project_id": "falldetector2",
+    "storage_bucket": "falldetector2.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1025371156608:android:ec6fb6d8d59faaa4",
+        "android_client_info": {
+          "package_name": "com.example.falldetector"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1025371156608-4f4npg03dnv95pdkpuuaaoi1e18i14vn.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.falldetector",
+            "certificate_hash": "6544448b11ca095b05d28f9bd2db496bc8240652"
+          }
+        },
+        {
+          "client_id": "1025371156608-2ia985slvo8a58s569abc26ttl06h9k1.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAwT_mJxJI5xC3T1WYsH2QyVohFQxLDKrc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1025371156608-2ia985slvo8a58s569abc26ttl06h9k1.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">FallDetector</string>
+    <string name="title_activity_emergency_contact">EmergencyContact</string>
+    <string name="title_activity_monitoring">Monitoring</string>
+
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="title_activity_have_account">HaveAccount</string>
+</resources>
