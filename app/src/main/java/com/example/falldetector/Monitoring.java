@@ -7,6 +7,8 @@ import android.content.pm.PackageManager;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.location.Location;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.CountDownTimer;
@@ -35,6 +37,9 @@ import com.google.firebase.database.ValueEventListener;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 
+import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -43,14 +48,13 @@ import java.util.Date;
 
 public class Monitoring extends AppCompatActivity implements SensorEventListener {
     SensorManager sensorManager;
-    Sensor acclerometer;
+    Sensor acclerometer, gyro;
     double xAcc, yAcc, zAcc;
     String accX, accY, accZ;
     double pitch, azimuth, roll;
-    Button minimize;
-    DatabaseReference databaseReference;
-    Sensor gyro;
     String azimuth_, pitch_, roll_;
+    DatabaseReference databaseReference;
+    Button minimize;
     ArrayList<Double> magnitude = new ArrayList<Double>();
     private FirebaseFirestore db;
     int fall = 0;
@@ -59,20 +63,21 @@ public class Monitoring extends AppCompatActivity implements SensorEventListener
     SimpleDateFormat format = new SimpleDateFormat("dd-MM-yyyy hh:mm");
     String currentTime = format.format(new Date());
     static String timestamp;
-    private static final long START_TIME_IN_MILLIS = 3000;
+    private static final long START_TIME_IN_MILLIS = 30000;
     private long mTimeLeftInMillis = START_TIME_IN_MILLIS;
     private boolean mTimerRunning;
     private TextView mTextViewCountDown;
     private FusedLocationProviderClient client;
     public static String geoUri = "";
-    String ecPhone,ecName;
+    String ecPhone, ecName;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_monitoring);
         Intent intent = getIntent();
         ecPhone = intent.getStringExtra("EmergencyPhone");
-        ecName  = intent.getStringExtra("EmergencyName");
+        ecName = intent.getStringExtra("EmergencyName");
         client = LocationServices.getFusedLocationProviderClient(this);
         db = FirebaseFirestore.getInstance();
         databaseReference = FirebaseDatabase.getInstance().getReference("sensorData");
@@ -92,20 +97,22 @@ public class Monitoring extends AppCompatActivity implements SensorEventListener
             }
         });
     }
+
+    // Records the accelerometer readings
     @Override
     public void onSensorChanged(SensorEvent event) {
         if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
             xAcc = event.values[0];
             yAcc = event.values[1];
             zAcc = event.values[2];
-            double loAccelerationReader = Math.sqrt(Math.pow(xAcc, 2)
+            double AccelerationReader = Math.sqrt(Math.pow(xAcc, 2)
                     + Math.pow(yAcc, 2)
                     + Math.pow(zAcc, 2));
             DecimalFormat precision = new DecimalFormat("0.00");
-            double ldAccRound = Double.parseDouble(precision.format(loAccelerationReader));
-            if (ldAccRound > 0.3d && ldAccRound < 0.9d) {
+            double accRound = Double.parseDouble(precision.format(AccelerationReader));
+            if (accRound > 0.3d && accRound < 0.9d) {
                 sensorManager.unregisterListener(this);
-                magnitude.add(ldAccRound);
+                magnitude.add(accRound);
                 Vibrator v = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                     v.vibrate(VibrationEffect.createOneShot(500, VibrationEffect.DEFAULT_AMPLITUDE));
@@ -115,16 +122,24 @@ public class Monitoring extends AppCompatActivity implements SensorEventListener
                 accX = Double.toString(xAcc);
                 accY = Double.toString(yAcc);
                 accZ = Double.toString(zAcc);
-                SensorData sd = new SensorData(accX, accY, accZ, fall);
-                databaseReference.child(String.valueOf(currentTime)).setValue(sd);
-                timestamp = currentTime;
-                getLocation();
-                startTimer();
-                double m = magnitude.get(magnitude.size() - 1);
-                Log.d("xAcc", "" + xAcc);
-                Log.d("xAcc", "" + yAcc);
-                Log.d("xAcc", "" + zAcc);
-                Log.d("magnitude", "" + m);
+                if (isInternetWorking()) {
+                    SensorData sd = new SensorData(accX, accY, accZ, fall);
+                    databaseReference.child(String.valueOf(currentTime)).setValue(sd);
+                    timestamp = currentTime;
+                    getLocation();
+                    startTimer();
+                    double mag = magnitude.get(magnitude.size() - 1);
+                    Log.d("xAcc", "" + xAcc);
+                    Log.d("xAcc", "" + yAcc);
+                    Log.d("xAcc", "" + zAcc);
+                    Log.d("magnitude", "" + mag);
+                } else {
+                    Intent offlineMode = new Intent(Monitoring.this, OfflineMode.class);
+                    offlineMode.putExtra("xAcc", accX);
+                    offlineMode.putExtra("yAcc", accY);
+                    offlineMode.putExtra("zAcc", accZ);
+                    startActivity(offlineMode);
+                }
             }
         }
     }
@@ -156,9 +171,9 @@ public class Monitoring extends AppCompatActivity implements SensorEventListener
                 fall.addListenerForSingleValueEvent(new ValueEventListener() {
                     @Override
                     public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                        Log.d("xAcc__", "" + timestamp);
+//                        Log.d("Timestamp", "" + timestamp);
                         String fallen = dataSnapshot.getValue(String.class);
-                        Log.d("xAcc", "" + fallen);
+//                        Log.d("Flag", "" + fallen);
                         if (fallen.equals("1")) {
                             Log.d("True", "" + fallen);
                             Vibrator v = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
@@ -229,11 +244,11 @@ public class Monitoring extends AppCompatActivity implements SensorEventListener
             @Override
             public void onSuccess(Location location) {
                 if (location != null)
-                    geoUri = ecName+""+"Your friend is in trouble,Please check out his most recent location:" + "http://maps.google.com/maps?q=loc:" + location.getLatitude() + "," + location.getLongitude();
+                    geoUri = ecName + "" + "Your friend is in trouble,Please check out his most recent location:" + "http://maps.google.com/maps?q=loc:" + location.getLatitude() + "," + location.getLongitude();
                 try {
                     Log.d("phone", ecPhone);
                     sendSMS(ecPhone, geoUri);
-                }catch (Exception e){
+                } catch (Exception e) {
                     Toast.makeText(getApplicationContext(), "Invalid mobile number",
                             Toast.LENGTH_LONG).show();
                 }
@@ -243,4 +258,20 @@ public class Monitoring extends AppCompatActivity implements SensorEventListener
         });
 
     }
+
+    public boolean isInternetWorking() {
+        boolean success=false;
+        ConnectivityManager cm =
+                (ConnectivityManager) getSystemService(this.CONNECTIVITY_SERVICE);
+
+        NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
+        if (activeNetwork != null && activeNetwork.isConnected()) {
+            success=true;
+        } else {
+            Toast.makeText(this, "Network is not available", Toast.LENGTH_LONG).show();
+            success=false;
+        }
+        return success;
+    }
+
 }

@@ -6,9 +6,7 @@ public class SensorData {
     private String accX, accY, accZ;
     private int Fall;
     private String date;
-    public SensorData() {
 
-    }
 
     public SensorData(String accX, String accY, String accZ,int Fall) {
         this.accX = accX;
@@ -27,7 +25,6 @@ public class SensorData {
 
         return accZ;
     }
-
 
     public int getFall() {
         return Fall;
