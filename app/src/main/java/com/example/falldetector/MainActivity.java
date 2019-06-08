@@ -115,16 +115,16 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         });
-        offlineMode = (Button) findViewById(R.id.offlineMode);
-        offlineMode.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent mon = new Intent(MainActivity.this, Monitoring.class);
-//                Toast.makeText(getApplicationContext(),  ePhone,
-//                        Toast.LENGTH_LONG).show();
-//                mon.putExtra("Emergency", ePhone);
-                startActivity(mon);
-            }
-        });
+//        offlineMode = (Button) findViewById(R.id.offlineMode);
+//        offlineMode.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View v) {
+//                Intent mon = new Intent(MainActivity.this, Monitoring.class);
+////                Toast.makeText(getApplicationContext(),  ePhone,
+////                        Toast.LENGTH_LONG).show();
+////                mon.putExtra("Emergency", ePhone);
+//                startActivity(mon);
+//            }
+//        });
     }
 }

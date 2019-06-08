@@ -48,11 +48,12 @@ import java.util.Date;
 
 public class Monitoring extends AppCompatActivity implements SensorEventListener {
     SensorManager sensorManager;
-    Sensor acclerometer, gyro;
+    Sensor acclerometer;
+    Sensor gyro;
     double xAcc, yAcc, zAcc;
     String accX, accY, accZ;
-    double pitch, azimuth, roll;
-    String azimuth_, pitch_, roll_;
+    double gyroX, gyroY, gyroZ;
+    String xGyro, yGyro, zGyro;
     DatabaseReference databaseReference;
     Button minimize;
     ArrayList<Double> magnitude = new ArrayList<Double>();
@@ -70,6 +71,7 @@ public class Monitoring extends AppCompatActivity implements SensorEventListener
     private FusedLocationProviderClient client;
     public static String geoUri = "";
     String ecPhone, ecName;
+    int x = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -85,8 +87,8 @@ public class Monitoring extends AppCompatActivity implements SensorEventListener
         sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
         acclerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
         gyro = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
-        sensorManager.registerListener(this, gyro, SensorManager.SENSOR_DELAY_NORMAL);
         sensorManager.registerListener(this, acclerometer, SensorManager.SENSOR_DELAY_NORMAL);
+        sensorManager.registerListener(this, gyro, SensorManager.SENSOR_DELAY_NORMAL);
         safe = (Button) findViewById(R.id.safe);
         mTextViewCountDown = findViewById(R.id.counter);
         safe.setOnClickListener(new View.OnClickListener() {
@@ -111,7 +113,8 @@ public class Monitoring extends AppCompatActivity implements SensorEventListener
             DecimalFormat precision = new DecimalFormat("0.00");
             double accRound = Double.parseDouble(precision.format(AccelerationReader));
             if (accRound > 0.3d && accRound < 0.9d) {
-                sensorManager.unregisterListener(this);
+                x=1;
+//                sensorManager.unregisterListener(this);
                 magnitude.add(accRound);
                 Vibrator v = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -123,23 +126,46 @@ public class Monitoring extends AppCompatActivity implements SensorEventListener
                 accY = Double.toString(yAcc);
                 accZ = Double.toString(zAcc);
                 if (isInternetWorking()) {
-                    SensorData sd = new SensorData(accX, accY, accZ, fall);
-                    databaseReference.child(String.valueOf(currentTime)).setValue(sd);
-                    timestamp = currentTime;
-                    getLocation();
+//                    SensorData sd = new SensorData(accX, accY, accZ, fall);
+//                    databaseReference.child(String.valueOf(currentTime)).setValue(sd);
+//                    timestamp = currentTime;
+//                    getLocation();
                     startTimer();
                     double mag = magnitude.get(magnitude.size() - 1);
                     Log.d("xAcc", "" + xAcc);
-                    Log.d("xAcc", "" + yAcc);
-                    Log.d("xAcc", "" + zAcc);
-                    Log.d("magnitude", "" + mag);
+                    Log.d("yAcc", "" + yAcc);
+                    Log.d("zAcc", "" + zAcc);
                 } else {
                     Intent offlineMode = new Intent(Monitoring.this, OfflineMode.class);
                     offlineMode.putExtra("xAcc", accX);
                     offlineMode.putExtra("yAcc", accY);
                     offlineMode.putExtra("zAcc", accZ);
+                    offlineMode.putExtra("Emergency_name", ecName);
+                    offlineMode.putExtra("Emergency_phone", ecPhone);
                     startActivity(offlineMode);
                 }
+            }
+
+        }
+        if (x == 1) {
+            try {
+                if (event.sensor.getType() == Sensor.TYPE_GYROSCOPE) {
+                    gyroX = event.values[0];
+                    gyroY = event.values[1];
+                    gyroZ = event.values[2];
+                    xGyro = Double.toString(gyroX);
+                    yGyro = Double.toString(gyroY);
+                    zGyro = Double.toString(gyroZ);
+                    SensorData sd = new SensorData(accX, accY, accZ, xGyro, yGyro, zGyro, fall);
+                    databaseReference.child(String.valueOf(currentTime)).setValue(sd);
+                    timestamp = currentTime;
+                    Log.d("gyroX", "" + xGyro);
+                    Log.d("gyroY", "" + yGyro);
+                    Log.d("gyroZ", "" + zGyro);
+                    sensorManager.unregisterListener(this);
+                }
+            } catch (Exception e) {
+                Log.d("Exception", "" + e);
             }
         }
     }
@@ -260,16 +286,16 @@ public class Monitoring extends AppCompatActivity implements SensorEventListener
     }
 
     public boolean isInternetWorking() {
-        boolean success=false;
+        boolean success = false;
         ConnectivityManager cm =
                 (ConnectivityManager) getSystemService(this.CONNECTIVITY_SERVICE);
 
         NetworkInfo activeNetwork = cm.getActiveNetworkInfo();
         if (activeNetwork != null && activeNetwork.isConnected()) {
-            success=true;
+            success = true;
         } else {
-            Toast.makeText(this, "Network is not available", Toast.LENGTH_LONG).show();
-            success=false;
+            Toast.makeText(this, "Network is not available,Offline mode activated", Toast.LENGTH_LONG).show();
+            success = false;
         }
         return success;
     }
